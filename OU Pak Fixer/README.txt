@@ -44,14 +44,16 @@ Pack Files\Disabled. Install it from PACK MANAGER > Disabled > Install
 selected, then pick the KTM 250 SX with the Team KTM 250 livery in game.
 
 
-CREDITS AND THANKS
-------------------
-The included skin, Nuckin's 06 KTM 200 XC-W, is by NuckinFutz197. Thanks to
-the community skin creators and to the MVA Unleashed Mod Collection. See
-CREDITS.md:
-https://github.com/ITGDOTFFTIOW/OU-Pak-Fixer/blob/main/CREDITS.md
+IN GAME SCREENSHOTS
+-------------------
+Nuckin's 06 KTM 200 XC-W (z_06_KTM_200_XCW.pak, included in the zip) and
+OEM_Kawasaki_KX450F_N-TM.pak working in game.
 
-All rights reserved.
+
+THANKS TO. . .
+--------------
+. . .See CREDITS.md:
+https://github.com/ITGDOTFFTIOW/OU-Pak-Fixer/blob/main/CREDITS.md
 
 
 FAQ
