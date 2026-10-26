@@ -43,13 +43,8 @@ Nuckin's 06 KTM 200 XC-W (`z_06_KTM_200_XCW.pak`, included in the zip) and OEM_K
   </tr>
 </table>
 
-## Credits and thanks
-The included skin, Nuckin's 06 KTM 200 XC-W - ITGDOTFFTIOW (aka NUCKIN in Open Unleashed)
-
-
-Thanks to ... See [CREDITS.md](CREDITS.md).
-
-All rights reserved.
+## Thanks to. . .
+. . .See [CREDITS.md](CREDITS.md).
 
 ## FAQ
 Questions and troubleshooting are in [FAQ.txt](OU%20Pak%20Fixer/FAQ.txt), which is also in the `OU Pak Fixer` folder.
