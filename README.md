@@ -36,19 +36,10 @@ Nuckin's clean 06 KTM 200 XC-W (`z_06_KTM_200_XCW.pak`, included in the zip) wor
 
 <table>
   <tr>
-    <td width="50%" align="center"><img src="guide/ingame-200xcw-beach.jpg" width="100%" alt="Nuckin's 06 KTM 200 XC-W in game: beach and pier"><br><sub>Beach and pier</sub></td>
-    <td width="50%" align="center"><img src="guide/ingame-200xcw-superman.jpg" width="100%" alt="Nuckin's 06 KTM 200 XC-W in game: superman over the trees"><br><sub>Superman over the trees</sub></td>
+    <td width="50%" align="center"><img src="guide/ingame-200xcw-beach.jpg" width="100%" alt="Nuckin's 06 KTM 200 XC-W in game: beach and pier"><br><sub>Nuckin's 06 KTM 200 XC-W in game</sub></td>
   </tr>
   <tr>
-    <td width="50%" align="center"><img src="guide/ingame-200xcw-stonewall.jpg" width="100%" alt="Nuckin's 06 KTM 200 XC-W in game: stone wall"><br><sub>Stone wall</sub></td>
-    <td width="50%" align="center"><img src="guide/ingame-200xcw-canyon.jpg" width="100%" alt="Nuckin's 06 KTM 200 XC-W in game: canyon at night"><br><sub>Canyon at night</sub></td>
-  </tr>
-  <tr>
-    <td width="50%" align="center"><img src="guide/ingame-200xcw-finish.jpg" width="100%" alt="Nuckin's 06 KTM 200 XC-W in game: wheelie at the finish"><br><sub>Wheelie at the finish</sub></td>
-    <td width="50%" align="center"><img src="guide/ingame-200xcw-tunnel.jpg" width="100%" alt="Nuckin's 06 KTM 200 XC-W in game: red tunnel wheelie"><br><sub>Red tunnel wheelie</sub></td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center"><img src="guide/ingame-oem-kx450f-ntm.jpg" width="50%" alt="Kawasaki KX450F with the N-TM 01 livery in game"><br><sub><code>z_OEM_Kawasaki_KX450F_N-TM.pak</code> (KX450F, N-TM 01 livery) working in game</sub></td>
+     <td colspan="2" align="center"><img src="guide/ingame-oem-kx450f-ntm.jpg" width="50%" alt="Kawasaki KX450F with the N-TM 01 livery in game"><br><sub><code>z_OEM_Kawasaki_KX450F_N-TM.pak</code> (KX450F, N-TM 01 livery) working in game</sub></td>
   </tr>
 </table>
 
