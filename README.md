@@ -8,7 +8,7 @@ A Windows app for **MX vs ATV Unleashed / Open Unleashed** `.pak` mods. It fixes
   <a href="https://github.com/ITGDOTFFTIOW/OU-Pak-Fixer/releases/latest"><img src="https://img.shields.io/badge/DOWNLOAD-latest%20release-e31c23?style=for-the-badge" alt="Download the latest release" height="56"></a>
 </p>
 
-On the release page, scroll to **Assets** and click the **.zip** file. Don't use the green **Code** button; that downloads the source, not the app.
+On the release page, scroll to **Assets** and click the **.zip** file.
 
 **How to use it:** see the [User Guide](GUIDE.md).
 
