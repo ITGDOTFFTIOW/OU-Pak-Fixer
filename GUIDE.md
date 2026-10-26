@@ -13,7 +13,7 @@ All folders below are inside the `OU Pak Fixer` folder unless it says *game fold
 
 ## 1. Startup
 
-Run **`OPEN UI.bat`**. The app opens on **PACK MANAGER > Installed**, which lists the mod paks in your game right now.
+Run **`OPEN UI.bat`**. The app opens on **PACK MANAGER > Installed**, which lists the mod paks in your game right now. To start it from your desktop next time, click **SETTINGS > Create desktop shortcut**.
 
 ![Startup screen](guide/fig1-startup.png)
 

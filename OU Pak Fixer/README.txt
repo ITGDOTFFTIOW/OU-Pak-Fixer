@@ -27,7 +27,8 @@ INSTALL
    https://github.com/ITGDOTFFTIOW/OU-Pak-Fixer/releases/latest
 2. Right-click the zip > Properties > tick Unblock > OK.
 3. Extract it anywhere. You get one folder, OU Pak Fixer.
-4. Run OPEN UI.bat in that folder.
+4. Run OPEN UI.bat in that folder. To add a desktop icon, use
+   SETTINGS > Create desktop shortcut.
 
 
 QUICK START

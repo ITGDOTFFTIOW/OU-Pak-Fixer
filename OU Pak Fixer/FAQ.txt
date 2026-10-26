@@ -23,9 +23,10 @@ skins in the game. Pick each bike and livery in game to see them.
 
 Two installed paks replace the same skin. Which one shows?
 ----------------------------------------------------------
-That is a Clash. Both paks replace the same skin slot, so the game can only
-show one of them, and it uses whichever one loads first. To choose, keep the
-one you want installed and Remove the other.
+That is a Clash. The game reads the paks in its data folder in alphabetical
+order by file name. When two paks fill the same skin slot, the one that
+loads last (latest in alphabetical order) is the one that shows. That is
+why the fixer renames $ paks to z_, so they load after the game's own files.
 
 
 The Showroom shows a pak as several cards. Did it split the pak?

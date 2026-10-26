@@ -5847,6 +5847,26 @@ foreach ($fb in @($btnOpenRoot, $btnOpenPackFiles, $btnOpenTheme)) {
   $fb.Dock = 'None'; $fb.Size = New-Object System.Drawing.Size(120, 32); $fb.Location = New-Object System.Drawing.Point($x, 10)
   $settingsFoldersCard.Controls.Add($fb); $x += 128
 }
+# Desktop shortcut: one row, under Folders
+$settingsShortcutCard = New-Object System.Windows.Forms.Panel
+$settingsShortcutCard.Width = $script:SettingsCardWidth
+$settingsShortcutCard.Height = 52
+$settingsShortcutCard.Margin = New-Object System.Windows.Forms.Padding(0, 0, 0, 10)
+$settingsShortcutCard.Name = 'settingsShortcutCard'
+Enable-OuGlass $settingsShortcutCard ([int]$script:Theme.GlassAlphaHeavy)
+[void]$settingsFlow.Controls.Add($settingsShortcutCard)
+$lblShortcutTitle = New-Object System.Windows.Forms.Label
+$lblShortcutTitle.Text = 'Shortcut'
+$lblShortcutTitle.AutoSize = $true
+$lblShortcutTitle.Location = New-Object System.Drawing.Point(10, 16)
+$lblShortcutTitle.Font = New-Object System.Drawing.Font('Segoe UI', 10, [System.Drawing.FontStyle]::Bold)
+Set-OuLabel $lblShortcutTitle
+$settingsShortcutCard.Controls.Add($lblShortcutTitle)
+$btnDesktopShortcut = New-ActionButton 'Create desktop shortcut'
+$btnDesktopShortcut.Name = 'settingsDesktopShortcut'
+$btnDesktopShortcut.Dock = 'None'; $btnDesktopShortcut.Size = New-Object System.Drawing.Size(248, 32); $btnDesktopShortcut.Location = New-Object System.Drawing.Point(100, 10)
+$settingsShortcutCard.Controls.Add($btnDesktopShortcut)
+
 # Path labels kept (hidden) so Update-SettingsPanel can keep the tooltips current
 $lblRootPath = New-Object System.Windows.Forms.Label
 $lblPackFilesPath = New-Object System.Windows.Forms.Label
@@ -6006,6 +6026,33 @@ function Open-SettingsFolder([string]$dir) {
 }
 
 $btnSettingsChange.Add_Click({ Invoke-ChangeGameFolder })
+function New-OuDesktopShortcut([string]$desktopDir) {
+  # Creates (or overwrites) 'Open Unleashed Pak Fixer.lnk' -> OPEN UI.bat, started minimized, with the app icon.
+  if (-not $desktopDir) { $desktopDir = [Environment]::GetFolderPath('Desktop') }
+  if (-not $desktopDir -or -not (Test-Path -LiteralPath $desktopDir)) { throw 'Desktop folder not found.' }
+  $bat = Join-Path $root 'OPEN UI.bat'
+  if (-not (Test-Path -LiteralPath $bat)) { throw 'OPEN UI.bat not found.' }
+  $lnk = Join-Path $desktopDir 'Open Unleashed Pak Fixer.lnk'
+  $ws = New-Object -ComObject WScript.Shell
+  try {
+    $sc = $ws.CreateShortcut($lnk)
+    $sc.TargetPath = $bat
+    $sc.WorkingDirectory = $root
+    if (Test-Path -LiteralPath $script:AppIconPath) { $sc.IconLocation = ($script:AppIconPath + ',0') }
+    $sc.WindowStyle = 7
+    $sc.Description = 'Open Unleashed Pak Fixer'
+    $sc.Save()
+  } finally { try { [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($ws) } catch { } }
+  $lnk
+}
+$btnDesktopShortcut.Add_Click({
+  try {
+    $lnk = New-OuDesktopShortcut
+    Set-Status ('Desktop shortcut created: ' + $lnk)
+  } catch {
+    Set-Status ('Desktop shortcut failed: ' + $_.Exception.Message)
+  }
+})
 $btnOpenRoot.Add_Click({ Open-SettingsFolder $root })
 $btnOpenPackFiles.Add_Click({ Open-SettingsFolder $script:PackFilesRoot })
 $btnOpenTheme.Add_Click({ Open-SettingsFolder $script:ThemeDir })
@@ -6044,6 +6091,7 @@ Set-Tip $btnSettingsChange 'Change the saved Open Unleashed game data folder (sa
 Set-Tip $btnOpenRoot 'Open the Pak Fixer root folder in Explorer'
 Set-Tip $btnOpenPackFiles 'Open Pack Files (Broken / Disabled / Fixed / Originals) in Explorer'
 Set-Tip $btnOpenTheme 'Open Settings\Theme (background image) in Explorer'
+Set-Tip $btnDesktopShortcut 'Put an "Open Unleashed Pak Fixer" shortcut on your desktop (replaces an existing one)'
 Set-Tip $btnAdvToggle 'Show or hide the raw settings.txt editor'
 Set-Tip $btnSaveSettings 'Write the Advanced text box to Settings\settings.txt'
 Set-Tip $btnReloadSettings 'Reload Settings\settings.txt into the Advanced editor'

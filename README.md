@@ -20,7 +20,7 @@ On the release page, scroll to **Assets** and click the **.zip** file.
 1. Download the .zip from the [latest release](https://github.com/ITGDOTFFTIOW/OU-Pak-Fixer/releases/latest).
 2. Right-click the zip > **Properties** > tick **Unblock** > **OK**.
 3. Extract it anywhere. You get one folder, `OU Pak Fixer`.
-4. Run **`OPEN UI.bat`** in that folder.
+4. Run **`OPEN UI.bat`** in that folder. To add a desktop icon, use **SETTINGS > Create desktop shortcut**.
 
 ## Quick start
 1. Run **`OPEN UI.bat`**. The game's `data` folder is found automatically (click **Change** on the top bar if it is wrong).
