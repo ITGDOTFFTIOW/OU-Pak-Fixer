@@ -105,7 +105,7 @@ Open **GALLERY > Showroom** and press **Search**. Every bike livery and gear ite
 2. **Search** box, **Search**, **Clear**, and **...** (make all missing previews, reload thumbnails). The grid stays empty until you press Search.
 3. **Rider preview**: rider number (blank = the number from your save), hand guards, and bar pad Round or Crossbar. This only affects the preview; your game save is never touched. The same controls are on the SETTINGS tab.
 4. **Filters**: Category, Subtype, Bike class, Sort, Has preview, Clashes, Clash-free only.
-5. How many items match.
+5. How many items match, and **Tick all**: ticks every card shown, or unticks them all when they are all ticked.
 6. **Card**: click it to preview. It shows the bike and livery it replaces (for example `CR125R THQ_01`), the slot type and the source pak. Its checkbox ticks it for Make previews.
 7. **3D preview** of the selected bike with your rider settings. Here: Nuckin's 06 KTM 200 XC-W on the KTM 250 SX.
 8. **Make previews**, **...**, full screen, and arrows to step through cards.

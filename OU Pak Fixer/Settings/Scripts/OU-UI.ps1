@@ -3380,10 +3380,26 @@ $lblShowTitle.Text = 'SHOWROOM'
 $lblShowTitle.Dock = 'Top'
 $lblShowTitle.Height = 28
 $lblShowTitle.Font = New-Object System.Drawing.Font('Segoe UI', 10, [System.Drawing.FontStyle]::Bold)
-$lblShowTitle.Padding = New-Object System.Windows.Forms.Padding(8, 6, 0, 0)
+$lblShowTitle.Padding = New-Object System.Windows.Forms.Padding(8, 6, 92, 0)   # right side reserved for 'Tick all'
+$lblShowTitle.AutoEllipsis = $true
 $lblShowTitle.Name = 'lblShowTitle'
 Set-OuLabel $lblShowTitle
 $showCenterHost.Controls.Add($lblShowTitle)
+# 'Tick all' in the title bar, next to the item count: one tri-state toggle for every card shown (all / some / none).
+$script:ShowroomTickAll = New-Object System.Windows.Forms.CheckBox
+$script:ShowroomTickAll.Text = 'Tick all'
+$script:ShowroomTickAll.AutoSize = $true
+$script:ShowroomTickAll.AutoCheck = $false   # Click decides; the box only mirrors the cards
+$script:ShowroomTickAll.Font = New-Object System.Drawing.Font('Segoe UI', 9)
+$script:ShowroomTickAll.ForeColor = $script:Theme.Text
+$script:ShowroomTickAll.BackColor = [System.Drawing.Color]::Transparent
+$script:ShowroomTickAll.Anchor = [System.Windows.Forms.AnchorStyles]'Top, Right'
+$script:ShowroomTickAll.Location = New-Object System.Drawing.Point(($lblShowTitle.Width - 86), 5)
+$script:ShowroomTickAll.Enabled = $false
+$script:ShowroomTickAll.Name = 'chkShowroomTickAll'
+$lblShowTitle.Controls.Add($script:ShowroomTickAll)
+$lblShowTitle.Add_Resize({ param($sender, $e); try { $script:ShowroomTickAll.Left = [Math]::Max(0, $sender.ClientSize.Width - $script:ShowroomTickAll.Width - 8) } catch { } })
+$script:ShowroomTickAll.Add_Click({ Toggle-ShowroomVisibleChecks })
 
 $lblShowMissing = New-Object System.Windows.Forms.Label
   $lblShowMissing.Text = '0 items in this filter have no usable thumb'
@@ -3906,6 +3922,50 @@ function Update-ShowroomCardChrome([System.Windows.Forms.Panel]$card, [bool]$sel
   $card.Invalidate()
 }
 
+function Get-ShowroomTickAllState {
+  $n = 0; $c = 0
+  if ($showCardFlow) {
+    foreach ($card in $showCardFlow.Controls) {
+      $k = [string]$card.Tag
+      if (-not $k) { continue }
+      $n++
+      if ($script:ShowroomChecked.Contains($k)) { $c++ }
+    }
+  }
+  if ($n -le 0 -or $c -le 0) { return 'Unchecked' }
+  if ($c -ge $n) { return 'Checked' }
+  'Indeterminate'
+}
+function Update-ShowroomTickAll {
+  $t = $script:ShowroomTickAll
+  if (-not $t -or $t.IsDisposed) { return }
+  $st = Get-ShowroomTickAllState
+  if ([string]$t.CheckState -ne $st) { $t.CheckState = [System.Windows.Forms.CheckState]$st }
+  $en = ($showCardFlow -and $showCardFlow.Controls.Count -gt 0 -and -not $script:ShowroomPreloading)
+  if ($t.Enabled -ne $en) { $t.Enabled = $en }
+}
+function Toggle-ShowroomVisibleChecks {
+  # Tick every card shown (the current filter), or untick them all when they are all ticked already. One batch, one preview refresh.
+  if ($script:ShowroomPreloading -or -not $showCardFlow -or -not $showCardFlow.Controls.Count) { return }
+  $target = ((Get-ShowroomTickAllState) -ne 'Checked')
+  $script:SuppressShowroom = $true
+  $showCardFlow.SuspendLayout()
+  try {
+    foreach ($card in $showCardFlow.Controls) {
+      $k = [string]$card.Tag
+      if (-not $k) { continue }
+      if ($target) { [void]$script:ShowroomChecked.Add($k) } else { [void]$script:ShowroomChecked.Remove($k) }
+      foreach ($ch in $card.Controls) { if ($ch -is [System.Windows.Forms.CheckBox]) { if ($ch.Checked -ne $target) { $ch.Checked = $target }; break } }
+    }
+  } finally {
+    $showCardFlow.ResumeLayout($false)
+    $script:SuppressShowroom = $false
+  }
+  Update-FixPreview
+  Update-ShowroomTickAll
+  Set-Status ("GALLERY - Showroom | {0} items | {1} checked" -f $showCardFlow.Controls.Count, $script:ShowroomChecked.Count)
+}
+
 function New-ShowroomCard($row) {
   $card = New-Object System.Windows.Forms.Panel
   $card.Size = New-Object System.Drawing.Size(200, 186)
@@ -3943,6 +4003,7 @@ function New-ShowroomCard($row) {
       [void]$script:ShowroomChecked.Remove($nm)
       Update-FixPreview          # unchecking leaves the current preview as is
     }
+    Update-ShowroomTickAll
   })
   $card.Controls.Add($chk)
 
@@ -4312,6 +4373,7 @@ function Clear-ShowroomGallery {
   }
   if ($lblShowTitle) { $lblShowTitle.Text = 'SHOWROOM - Installed (click Search to load items)' }
   if ($lblShowMissing) { $lblShowMissing.Text = 'Set filters, then click Search under the filters' }
+  Update-ShowroomTickAll
   if ((Get-Command Clear-FixPreview -EA SilentlyContinue)) { Clear-FixPreview }
   if ((Get-Command Set-Status -EA SilentlyContinue)) { Set-Status 'GALLERY - Showroom | waiting for Search' }
 }
@@ -4338,6 +4400,7 @@ function Refresh-ShowroomGrid {
     }
     if ($lblShowTitle) { $lblShowTitle.Text = 'SHOWROOM - Installed (click Search to load items)' }
     if ($lblShowMissing) { $lblShowMissing.Text = 'Set filters, then click Search under the filters' }
+    Update-ShowroomTickAll
     return
   }
   if ($script:ShowroomPreloading) { return }
@@ -4353,11 +4416,13 @@ function Refresh-ShowroomGrid {
   try { $showCardFlow.Controls.Clear(); $script:ShowroomCardMap = @{} } finally { $script:SuppressShowroom = $false }
   if ((Get-Command Clear-FixPreview -EA SilentlyContinue)) { Clear-FixPreview }
   Set-ShowroomBusyUi $true
+  Update-ShowroomTickAll
   try {
     Update-ShowroomGridCore $tm
   } finally {
     Set-ShowroomBusyUi $false
     $script:ShowroomPreloading = $false
+    Update-ShowroomTickAll
     $tm.TotalMs = $swAll.ElapsedMilliseconds
     $tm.Cancelled = [bool]$script:ShowroomPreloadCancel
     $script:ShowroomLastSearch = [pscustomobject]$tm
@@ -4711,6 +4776,7 @@ function Build-ShowroomFiltersRail {
   Set-Tip $btnShowMore 'More: Make all missing, Reload thumbnails'
   Set-Tip $chkSolo 'Only items that no other installed pack replaces'
   Set-Tip $lbLock 'Showroom always uses Installed packs (no Broken/Disabled toggle)'
+  Set-Tip $script:ShowroomTickAll 'Tick every card shown, or untick them all when they are all ticked'
 }
 
 function Show-ManageSub([string]$sub) {
@@ -4742,6 +4808,7 @@ function Show-ManageSub([string]$sub) {
       Update-FixPreview
       if ($script:ViewState.ContainsKey('ShowroomScroll')) { Set-OuScrollPos $showCardFlow $script:ViewState['ShowroomScroll'] }
       Set-Status ("GALLERY - Showroom | {0} items | {1} checked" -f $showCardFlow.Controls.Count, $script:ShowroomChecked.Count)
+      Update-ShowroomTickAll
     }
   } else {
     # Return preview pane to PACK MANAGER host so it is not orphaned
