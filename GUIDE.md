@@ -7,7 +7,9 @@ All folders below are inside the `OU Pak Fixer` folder unless it says *game fold
 - [1. Startup](#1-startup)
 - [2. PACK MANAGER](#2-pack-manager)
 - [3. Showroom](#3-showroom)
+- [Red X boxes and the "Cannot convert null" error](#red-x-boxes-and-cannot-convert-null-to-type-systemdrawingcolor)
 - [Fallback: FIX PAKS.bat and MANAGE PACKS.bat](#fallback-fix-paksbat-and-manage-packsbat)
+- [FAQ](#faq)
 
 ## 1. Startup
 
@@ -53,17 +55,17 @@ Run **`OPEN UI.bat`**. The app opens on **PACK MANAGER > Installed**, which list
 3. Check the list under **Selected packs**.
 4. Click **Fix selected**:
    - **Yes**: fix and install into the game.
-   - **No**: fix only. The paks go to `Pack Files\Disabled`.
+   - **No**: fix only. The paks go to `Pack Files\Disabled`, and the app switches to **Disabled** with them ticked.
    - **Cancel**: do nothing.
 
 **After:**
 
 ![The fixed paks installed](guide/fig4-fix-after.png)
 
-1. The app switches back to **Installed**.
+1. After **Yes**, the app switches to **Installed** by itself.
 2. The two fixed paks are now in the game. They were renamed so they load after the game's own files (`$2007'CRF450_MotoX.pak` became `z_2007'CRF450_MotoX.pak`). One is **Good**. The other shows **Clash**, because an installed pak already replaces the same bike.
-3. They are still ticked under **Selected packs**.
-4. The status bar shows the result.
+3. They are ticked and listed under **Selected packs**, ready for the next step (for example **Make previews**).
+4. The status bar shows the result (how many were fixed and installed).
 
 - A copy of each fixed pak is kept in `Pack Files\Fixed`, and the untouched original goes to `Pack Files\Originals`.
 - If the game is running, the fixer waits for you to close it.
@@ -76,7 +78,7 @@ Run **`OPEN UI.bat`**. The app opens on **PACK MANAGER > Installed**, which list
 ### Disabled paks
 **Disabled** lists the paks in `Pack Files\Disabled`. Tick them and click **Install selected** to put them back in the game; they are fixed on the way in if needed.
 
-The included skin, Nuckin's 06 KTM 200 XC-W (`z_06_KTM_200_XCW.pak`), ships here. Tick it and click **Install selected**, then pick the **KTM 250 SX** in game.
+The included skin, Nuckin's 06 KTM 200 XC-W (`z_06_KTM_200_XCW.pak`), ships here. Tick it and click **Install selected**, then pick the **KTM 250 SX** with the **Team KTM 250** livery in game. It replaces that livery.
 
 ### Where everything lives
 
@@ -107,12 +109,22 @@ Open **GALLERY > Showroom** and press **Search**. Every bike livery and gear ite
 4. **Filters**: Category, Subtype, Bike class, Sort, Has preview, Clashes, Clash-free only.
 5. How many items match, and **Tick all**: ticks every card shown, or unticks them all when they are all ticked.
 6. **Card**: click it to preview. It shows the bike and livery it replaces (for example `CR125R THQ_01`), the slot type and the source pak. Its checkbox ticks it for Make previews.
-7. **3D preview** of the selected bike with your rider settings. Here: Nuckin's 06 KTM 200 XC-W on the KTM 250 SX.
+7. **3D preview** of the selected bike with your rider settings. Here: Nuckin's 06 KTM 200 XC-W on the KTM 250 SX (it replaces the Team KTM 250 livery).
 8. **Make previews**, **...**, full screen, and arrows to step through cards.
 
 Set **Category** to **Rider gear** and press **Search** again to see helmets, jerseys, goggles and boots. Gear previews show the texture itself.
 
 3D renders are cached in `Pack Manager\Previews`, so they load instantly next time.
+
+## Red X boxes and "Cannot convert null to type System.Drawing.Color"
+
+![Red X boxes with the Cannot convert null error](guide/fig7-red-x-error.png)
+
+If the panels turn into red X boxes and this error pops up, the window failed to redraw itself. Partway through a redraw it lost access to its theme colors (for example while a folder picker was open over it), so its see-through panels could not be drawn. Once a panel fails to draw, Windows shows a red X in its place until the app is restarted.
+
+It is harmless. Nothing was changed in the game, your paks or your save.
+
+To clear it, click **Continue**, close the app and run **`OPEN UI.bat`** again.
 
 ## Fallback: FIX PAKS.bat and MANAGE PACKS.bat
 
@@ -122,3 +134,7 @@ These two console tools are the original working concepts behind the Pak Fixer. 
 - **`Pack Manager\MANAGE PACKS.bat`**: a numbered menu to turn paks on and off, fix installed paks, make previews and save loadouts.
 
 Both use the same folders as the app, so you can switch between them freely.
+
+## FAQ
+
+Questions and troubleshooting are in [FAQ.txt](OU%20Pak%20Fixer/FAQ.txt), which is also in the `OU Pak Fixer` folder.

@@ -22,9 +22,17 @@ On the release page, scroll to **Assets** and click the **.zip** file. Don't use
 3. Extract it anywhere. You get one folder, `OU Pak Fixer`.
 4. Run **`OPEN UI.bat`** in that folder.
 
+## Quick start
+1. Run **`OPEN UI.bat`**. The game's `data` folder is found automatically (click **Change** on the top bar if it is wrong).
+2. Put downloaded `.pak` files in `Pack Files\Broken`.
+3. **PACK MANAGER > Broken**: tick the paks, click **Fix selected**, then **Yes** to install them. The app switches to **Installed** with the fixed paks ticked.
+4. **GALLERY > Showroom > Search** previews every installed bike and gear item.
+
+The included skin, Nuckin's 06 KTM 200 XC-W (`z_06_KTM_200_XCW.pak`), is in `Pack Files\Disabled`. Install it from **PACK MANAGER > Disabled > Install selected**, then pick the **KTM 250 SX** with the **Team KTM 250** livery in game.
+
 ## In game
 
-Nuckin's clean 06 KTM 200 XC-W (`z_06_KTM_200_XCW.pak`, included in the zip) working in game.
+Nuckin's clean 06 KTM 200 XC-W (`z_06_KTM_200_XCW.pak`, included in the zip) working in game. It replaces the Team KTM 250 livery on the KTM 250 SX.
 
 <table>
   <tr>
@@ -44,39 +52,10 @@ Nuckin's clean 06 KTM 200 XC-W (`z_06_KTM_200_XCW.pak`, included in the zip) wor
   </tr>
 </table>
 
-## FAQ and troubleshooting
-
-**What do Good, Broken and Clash mean?**
-- **Good**: ready to go.
-- **Broken**: the pak needs fixing (bad texture headers, or a name that loads before the game's own files, such as one starting with `$`). Tick it and click **Fix selected**.
-- **Clash**: another installed pak replaces the same item. Only one shows in game. Remove the one you don't want.
-
-**How do I find my game folder?**
-The app finds it by itself. If it picks the wrong one, click **Change** on the top bar and choose the game's `data` folder (the one with `common.pak`). For Steam that is usually `C:\Program Files (x86)\Steam\steamapps\common\MX vs. ATV Unleashed\data`. In Steam you can also right-click the game > **Manage** > **Browse local files** and open `data`.
-
-**A skin doesn't show up in game.**
-- Check its status in **PACK MANAGER > Installed**. Broken paks must be fixed first.
-- If it says **Clash**, another pak replaces the same item. Remove the other one.
-- Make sure you picked the right bike and team/livery in game. The Showroom card shows which bike and livery the skin replaces.
-- Restart the game after installing or removing paks.
-
-**Windows blocks the .bat or PowerShell.**
-- Right-click the downloaded zip > **Properties** > tick **Unblock** > **OK**, then extract it again.
-- If SmartScreen shows "Windows protected your PC", click **More info** > **Run anyway**.
-- The .bat files start PowerShell with `-ExecutionPolicy Bypass` for this app only. Your system setting is not changed.
-
-**How do I undo or uninstall?**
-- To take a pak out of the game: tick it under **Installed** and click **Remove**. It moves to `Pack Files\Disabled`, and nothing is deleted.
-- To restore an original download: the untouched copy is in `Pack Files\Originals`.
-- To uninstall the app: remove your paks from the game first if you want the game back to stock, then delete the `OU Pak Fixer` folder. The app never changes the game's own paks or your save.
-
-**Where can I get more skins?**
-The [MVA Unleashed Mod Collection on ModDB](https://www.moddb.com/mods/mva-unleashed-mod-collection). Put downloaded paks in `Pack Files\Broken` and fix them from **PACK MANAGER > Broken**.
-
-**If the window app won't start**
-`FIX PAKS.bat` and `Pack Manager\MANAGE PACKS.bat` do the same fixing and turning paks on/off from a console window. See the [User Guide](GUIDE.md#fallback-fix-paksbat-and-manage-packsbat).
-
 ## Credits and thanks
 The included skin, Nuckin's 06 KTM 200 XC-W, is by NuckinFutz197. Thanks to the community skin creators and to the MVA Unleashed Mod Collection. See [CREDITS.md](CREDITS.md).
 
 All rights reserved.
+
+## FAQ
+Questions and troubleshooting are in [FAQ.txt](OU%20Pak%20Fixer/FAQ.txt), which is also in the `OU Pak Fixer` folder.
