@@ -1,0 +1,13 @@
+OU Pak Fixer/Settings/settings.txt
+OU Pak Fixer/Settings/rider.txt
+OU Pak Fixer/Settings/rider.cache
+*.cache
+OU Pak Fixer/Pack Manager/Installed Packs.txt
+OU Pak Fixer/Pack Manager/Loadouts/
+OU Pak Fixer/Pack Manager/Previews/*
+!OU Pak Fixer/Pack Manager/Previews/.gitkeep
+OU Pak Fixer/Pack Files/*/*.pak
+!OU Pak Fixer/Pack Files/Disabled/z_06_KTM_200_XCW.pak
+*.bak
+*.log
+logs/

@@ -1,0 +1,4 @@
+Open Unleashed Pak Fixer
+Version: 1.0.0
+Date: 2026-10-26
+UI: OPEN UI.bat (window app). Console tools FIX PAKS.bat / MANAGE PACKS.bat still included.
