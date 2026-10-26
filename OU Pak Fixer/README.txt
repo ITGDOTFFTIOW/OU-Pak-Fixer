@@ -8,8 +8,7 @@ every bike and gear item in a 3D Showroom.
 Download the latest release:
 https://github.com/ITGDOTFFTIOW/OU-Pak-Fixer/releases/latest
 
-On the release page, scroll to Assets and click the .zip file. Don't use the
-green Code button; that downloads the source, not the app.
+On the release page, scroll to Assets and click the .zip file.
 
 How to use it: see the User Guide.
 https://github.com/ITGDOTFFTIOW/OU-Pak-Fixer/blob/main/GUIDE.md
