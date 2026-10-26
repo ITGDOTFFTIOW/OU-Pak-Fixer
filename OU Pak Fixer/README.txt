@@ -44,12 +44,6 @@ Pack Files\Disabled. Install it from PACK MANAGER > Disabled > Install
 selected, then pick the KTM 250 SX with the Team KTM 250 livery in game.
 
 
-IN GAME SCREENSHOTS
--------------------
-Nuckin's 06 KTM 200 XC-W (z_06_KTM_200_XCW.pak, included in the zip) and
-OEM_Kawasaki_KX450F_N-TM.pak working in game.
-
-
 THANKS TO. . .
 --------------
 . . .See CREDITS.md:
