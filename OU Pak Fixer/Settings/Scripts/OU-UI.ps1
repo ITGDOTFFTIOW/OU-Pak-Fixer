@@ -21,6 +21,10 @@ $manage = Join-Path $here 'Manage-OUPaks.ps1'
 if (-not (Test-Path -LiteralPath $manage)) { throw "Manage-OUPaks.ps1 not found next to OU-UI.ps1: $here" }
 
 . $manage
+# From here on the fixer script must never open its own folder picker: a dialog shown inside a child script runs the
+# message loop in that script's scope, so this window's paint handlers lose their $script: variables (red-X panels,
+# "Cannot convert null to type System.Drawing.Color"). Change game folder uses the picker in Invoke-ChangeGameFolder.
+$env:OU_PAKFIXER_NOPICK = '1'
 $script:OU3DPump = $true   # 3D waits pump WinForms messages (UI stays responsive)
 
 $brokenDir = Join-Path $root 'Pack Files\Broken'
@@ -29,6 +33,7 @@ $disabledDir = Join-Path $root 'Pack Files\Disabled'
 $origDir = Join-Path $root 'Pack Files\Originals'
 $catalogPath = Join-Path $here 'mod-catalog.json'
 $readmePath = Join-Path $root 'README.txt'
+$faqPath = Join-Path $root 'FAQ.txt'
 $versionPath = Join-Path $root 'VERSION.txt'
 foreach ($d in @($brokenDir, $fixedDir, $disabledDir, $origDir)) { New-Item -ItemType Directory -Force -Path $d | Out-Null }
 
@@ -2891,6 +2896,21 @@ $lstCatalog.Add_MouseClick({
   $script:LastCatalogIndex = $idx
 })
 
+function Switch-CatalogSource([string]$next) {
+  # Programmatic Source change (same as clicking a Source button, but keeps the current ticks).
+  $changed = ($next -ne $script:CatalogSource)
+  $script:CatalogSource = $next
+  $script:FixPrevIndex = 0
+  foreach ($k in $script:SourceButtons.Keys) {
+    $b = $script:SourceButtons[$k]
+    if ($k -eq $script:CatalogSource) { Set-OuRailSelected $b } else { Set-OuRailIdle $b }
+    $b.TextAlign = 'MiddleCenter'
+  }
+  Apply-SourceUI
+  Refresh-CatalogList
+  if ($changed) { try { Step-OuBackground } catch { } }
+}
+
 function Invoke-GuiFixer {
   try {
     if ($script:CatalogSource -ne 'Broken') {
@@ -2945,9 +2965,17 @@ function Invoke-GuiFixer {
         }
       }
     }
+    # Show where the fixed packs went (Yes = Installed, No = Disabled), with them still ticked.
+    $placed = @($out | Where-Object { $_ -is [string] -and $_ -like 'PLACED|*' } | ForEach-Object { $_.Substring(7) } | Where-Object { $_ })
     $script:CheckedNames.Clear()
-    Refresh-CatalogList
-    # Catalog is PACK MANAGER now; Refresh-CatalogList already ran above.
+    $dest = $null
+    if ($placed.Count) { $dest = if ($mode -eq 'yes') { 'Installed' } else { 'Disabled' } }
+    if ($dest) {
+      foreach ($pn in $placed) { [void]$script:CheckedNames.Add($pn) }
+      Switch-CatalogSource $dest
+    } else {
+      Refresh-CatalogList
+    }
     $msg = ("{0} fixed, {1} already OK" -f $nFixed, $nOk)
     if ($nSkip) { $msg += (", {0} skipped" -f $nSkip) }
     if ($mode -eq 'yes') { $msg += (", {0} installed" -f $nInst) }
@@ -4939,14 +4967,19 @@ $btnReadmeNotepad.Dock = 'None'
 $btnReadmeNotepad.Size = New-Object System.Drawing.Size(140, 32)
 $btnReadmeNotepad.Name = 'btnReadmeNotepad'
 
+$btnReadmeFaq = New-ActionButton 'Open FAQ' 140
+$btnReadmeFaq.Dock = 'None'
+$btnReadmeFaq.Size = New-Object System.Drawing.Size(140, 32)
+$btnReadmeFaq.Name = 'btnReadmeFaq'
+
 $readmeBtnHost = New-Object System.Windows.Forms.Panel
 $readmeBtnHost.Dock = 'Right'
-$readmeBtnHost.Width = 160
+$readmeBtnHost.Width = 304
 $readmeBtnHost.Padding = New-Object System.Windows.Forms.Padding(4, 8, 8, 8)
 Set-OuSeeThroughHost $readmeBtnHost
 $readmeChrome.Controls.Add($readmeBtnHost)
 
-$readmeBtnRow = New-ButtonTable @($btnReadmeNotepad)
+$readmeBtnRow = New-ButtonTable @($btnReadmeFaq, $btnReadmeNotepad)
 $readmeBtnRow.Dock = 'Fill'
 $readmeBtnRow.Height = 32
 $readmeBtnHost.Controls.Add($readmeBtnRow)
@@ -4976,6 +5009,13 @@ $btnReadmeNotepad.Add_Click({
     Start-Process notepad.exe $readmePath
   } else {
     [void][System.Windows.Forms.MessageBox]::Show('README.txt not found.', 'README')
+  }
+})
+$btnReadmeFaq.Add_Click({
+  if (Test-Path -LiteralPath $faqPath) {
+    Start-Process notepad.exe $faqPath
+  } else {
+    [void][System.Windows.Forms.MessageBox]::Show('FAQ.txt not found.', 'FAQ')
   }
 })
 
@@ -5930,7 +5970,22 @@ function Update-SettingsPanelKeepEdits {
 
 function Invoke-ChangeGameFolder {
   try {
-    & $fixer -ChangeFolder -ListOnly | Out-Null
+    # Picker runs here (this script's scope), not inside Fix-OUPaks.ps1, so repaints behind it keep working.
+    $d = New-Object System.Windows.Forms.FolderBrowserDialog
+    $d.Description = 'Pick your MX vs. ATV Unleashed "data" folder (the one with common.pak in it)'
+    $d.ShowNewFolderButton = $false
+    $cur = Get-Game; if ($cur) { $d.SelectedPath = $cur }
+    $picked = $null
+    while ($d.ShowDialog($form) -eq [System.Windows.Forms.DialogResult]::OK) {
+      $p = $d.SelectedPath
+      if (-not (Test-Path -LiteralPath (Join-Path $p 'common.pak')) -and (Test-Path -LiteralPath (Join-Path $p 'data\common.pak'))) { $p = Join-Path $p 'data' }
+      if (Test-Path -LiteralPath (Join-Path $p 'common.pak')) { $picked = $p; break }
+      [void][System.Windows.Forms.MessageBox]::Show("That folder doesn't have common.pak in it. Pick the game's data folder.", 'Change game folder')
+    }
+    $d.Dispose()
+    if (-not $picked) { return }
+    Set-Content -LiteralPath $cfg -Value "GameDataFolder=$picked"
+    & $fixer -ListOnly | Out-Null
     $g = Get-Game
     if ($g) { $script:game = $g }
     Update-GameBox

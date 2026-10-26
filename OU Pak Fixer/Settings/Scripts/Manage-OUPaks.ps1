@@ -10,7 +10,7 @@ $cfg     = Join-Path $root 'Settings\settings.txt'
 $prevD   = Join-Path $root 'Pack Manager\Previews'
 $loadD   = Join-Path $root 'Pack Manager\Loadouts'
 $listTxt = Join-Path $root 'Pack Manager\Installed Packs.txt'
-foreach($p in $disD,$orig,$prevD,$loadD,(Split-Path $listTxt -Parent)){ New-Item -ItemType Directory -Force $p | Out-Null }
+foreach($p in $disD,$orig,$prevD,(Split-Path $listTxt -Parent)){ New-Item -ItemType Directory -Force $p | Out-Null }
 $STOCK = 'aud,common,env,fs01,fs02,fs03,fs04,fs05,fs06,fs07,fs08,fs09,fs10,fs11,fs12,fs13,mc01,mc02,mc03,mc04,mc05,mc06,mc07,mc08,mc09,mc10,mst,nat01,nat02,nat03,nat04,nat05,nat06,nat07,nat08,nat09,nat10,nat11,nat12,nat13,nat14,nat15,nat16,nat17,nat18,nat19,sm01,sm02,sm03,sx01,sx02,sx03,sx04,sx05,sx06,sx07,sx08,sx09,sx10,sx11,sx12,sx13,sx14,sx15,sx16,sx17,sx18,sx19,sx20,tex,ui'.Split(',') | ForEach-Object { "$_.pak" }
 function Get-Game { if(Test-Path -LiteralPath $cfg){ $l=Get-Content -LiteralPath $cfg | ? { $_ -like 'GameDataFolder=*' } | select -First 1; if($l){ $g=$l.Substring(15); if(Test-Path -LiteralPath (Join-Path $g 'common.pak')){ return $g } } }; $null }
 function Refresh-List { & $fixer -ListOnly | Out-Null }
@@ -805,11 +805,12 @@ function Make-Previews($sel){ Load-Preview; $made=0; $same=0; $m3=0; $f3=0
 }
 
 # ---------- loadouts ----------
-function Loadouts { @(Get-ChildItem -LiteralPath $loadD -File | ? { $_.Extension -ieq '.txt' } | sort Name) }
+function Loadouts { if(-not (Test-Path -LiteralPath $loadD)){ return @() }; @(Get-ChildItem -LiteralPath $loadD -File | ? { $_.Extension -ieq '.txt' } | sort Name) }
 function Read-Loadout($f){ @(Get-Content -LiteralPath $f.FullName -Encoding UTF8 | % { $_.Trim() } | ? { $_ -and -not $_.StartsWith('#') -and ($STOCK -notcontains $_.ToLower()) } | select -Unique) }
 function Save-Loadout { $inst=Installed
   $nm=Read-Host "`n  Name for this loadout (e.g. Spider-Man setup), Enter to cancel"; $nm=($nm -replace '[\\/:*?"<>|]','').Trim()
   if(-not $nm){ Write-Host "  Cancelled."; return }
+  New-Item -ItemType Directory -Force $loadD | Out-Null  # created only when a loadout is saved
   $path=Join-Path $loadD "$nm.txt"
   if(Test-Path -LiteralPath $path){ $a=Read-Host "  '$nm' already exists. Replace it? [y/N]"; if($a -notmatch '^(y|yes)$'){ Write-Host "  Cancelled."; return } }
   $lines=@("# Open Unleashed loadout: $nm","# Saved $(Get-Date -Format 'yyyy-MM-dd h:mm tt'). One pack file name per line.") + @($inst | % { $_.Name })

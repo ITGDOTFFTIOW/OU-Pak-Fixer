@@ -44,7 +44,9 @@ if($ChangeFolder -or -not (Test-GameData $game)){
   $auto= if($ChangeFolder){$null}else{Find-GameData}
   if($auto){ $game=$auto }
   else { if(-not $ChangeFolder){ Write-Host "Couldn't find your game automatically. Pick its data folder in the window that opens..." }
-         $picked=Pick-GameData; if($picked){ $game=$picked } elseif(-not (Test-GameData $game)){ $game=$null } }
+         # OU-UI sets OU_PAKFIXER_NOPICK: never open a dialog from inside this script while the window app is running
+         # (its paint handlers would run in this script's scope and fail). The app has its own Change picker.
+         $picked= if($env:OU_PAKFIXER_NOPICK -and -not $ChangeFolder){ $null } else { Pick-GameData }; if($picked){ $game=$picked } elseif(-not (Test-GameData $game)){ $game=$null } }
   if($game){ Set-Content -LiteralPath $cfg -Value "GameDataFolder=$game" }
 }
 if($game){ if(-not $ListOnly){ Write-Host "Game data folder: $game"; Write-Host "(Wrong folder? Run Settings\CHANGE GAME FOLDER.bat)`n" } } else { Write-Host "No game folder set, so the installed-packs list will be skipped.`n" }
@@ -239,7 +241,7 @@ $files = if($ListOnly){ @() } else {
   }
   $allBroken
 }
-$nFixed=0; $nOk=0; $nSkipped=0; $nInstalled=0; $nInstallFail=0; $nDisabled=0; $ready=@(); $justFixed=@()
+$nFixed=0; $nOk=0; $nSkipped=0; $nInstalled=0; $nInstallFail=0; $nDisabled=0; $ready=@(); $justFixed=@(); $placed=@()
 if(-not $files){ if(-not $ListOnly){
   if($OnlyPacks -and @($OnlyPacks).Count){ Write-Host "No matching .pak files in 'Pack Files\Broken' for -OnlyPacks." }
   else { Write-Host "No .pak files in 'Pack Files\Broken' to fix." }
@@ -272,7 +274,7 @@ else {
       # declined / skipped: move only the packs fixed in THIS run from Fixed to Disabled (unique name if taken)
       foreach($j in $justFixed){ if(Test-Path -LiteralPath $j){
         $leaf=Split-Path $j -Leaf
-        try { $dst=FreeName $disD $leaf; Move-Item -LiteralPath $j -Destination $dst -ErrorAction Stop; $nDisabled++
+        try { $dst=FreeName $disD $leaf; Move-Item -LiteralPath $j -Destination $dst -ErrorAction Stop; $nDisabled++; $placed+=(Split-Path $dst -Leaf)
           if((Split-Path $dst -Leaf) -ne $leaf){ Write-Host "DISABLED: $leaf as $(Split-Path $dst -Leaf)" } else { Write-Host "DISABLED: $leaf" } }
         catch { Write-Host "COULDN'T MOVE $leaf to Disabled: $($_.Exception.Message)" } } }
       Write-Host "OK. Not installed. $nDisabled fixed pack(s) moved to 'Pack Files\Disabled' (add them later with Manage Packs)."
@@ -288,13 +290,14 @@ else {
           $destName=Suggest-LoadOrderName $game $r.Name
           try { Copy-Item -LiteralPath $r.FullName -Destination (Join-Path $game $destName) -Force -ErrorAction Stop
             if($destName -ne $r.Name){ Write-Host "INSTALLED: $($r.Name) as $destName (loads after common.pak)" } else { Write-Host "INSTALLED: $($r.Name)" }
-            $nInstalled++ }
+            $nInstalled++; $placed+=$destName }
           catch { Write-Host "COULDN'T INSTALL $($r.Name) (close the game and run again): $($_.Exception.Message)"; $nInstallFail++ } }
       }
     }
   } elseif($ready.Count){ Write-Host "Copy everything in 'Pack Files\Fixed' into your game's data folder." }
 }
 if($NoPrompt -and -not $ListOnly -and -not $UnusedReport -and -not $FixFile){
+  foreach($pn in $placed){ "PLACED|$pn" }
   "RESULT|FIXED|$nFixed|OK|$nOk|SKIPPED|$nSkipped|INSTALLED|$nInstalled|FAIL|$nInstallFail|READY|$(@($ready).Count)|DISABLED|$nDisabled"
 }
 
