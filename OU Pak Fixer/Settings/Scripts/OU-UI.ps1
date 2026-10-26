@@ -311,11 +311,11 @@ public static class OuLvHeader {
 }
 
 # ==================== Open Unleashed theme (dark glass + red accents) ====================
-# Background photos: Settings\Theme\bg-01.jpg, bg-02.jpg, ... shown in name order; bg-01 is the launch photo.
-# The photo moves to the next one (wrapping) on every top-tab or side-tab change.
+# Background photos: Settings\Theme\bg-NN[ name].jpg (e.g. 'bg-03 seat grab indian air.jpg'), in name order. Launch opens on a random one;
+# the photo then moves to the next one (wrapping) on every top-tab or side-tab change.
 $script:ThemeBgDir = Join-Path $root 'Settings\Theme'
 $script:ThemeBgPaths = @()
-try { $script:ThemeBgPaths = @(Get-ChildItem -LiteralPath $script:ThemeBgDir -File -ErrorAction Stop | Where-Object { $_.Name -match '^bg-\d+\.(jpe?g|png)$' } | Sort-Object Name | ForEach-Object { $_.FullName }) } catch { $script:ThemeBgPaths = @() }
+try { $script:ThemeBgPaths = @(Get-ChildItem -LiteralPath $script:ThemeBgDir -File -ErrorAction Stop | Where-Object { $_.Name -match '^bg-\d+( [^\\/]*)?\.(jpe?g|png)$' } | Sort-Object Name | ForEach-Object { $_.FullName }) } catch { $script:ThemeBgPaths = @() }
 if (-not $script:ThemeBgPaths.Count) { $script:ThemeBgPaths = @(Join-Path $script:ThemeBgDir 'ktm-xcw-bg.jpg') }   # older installs
 $script:ThemeBgPath = $script:ThemeBgPaths[0]
 # App icon (197N front plate). Missing/bad file never blocks launch.
@@ -822,9 +822,11 @@ $form.MinimumSize = New-Object System.Drawing.Size(900, 580)
 $form.BackColor = $script:Theme.PanelDeep
 Set-OuFormIcon $form
 # Full-bleed OU photo behind translucent cards
-# Launch photo (bg-01) decodes now; the rest decode in the background only when needed.
+# Launch photo (random pick) decodes now; the rest decode in the background only when needed.
 $script:ThemeBgImage = $null
-for ($bi = 0; $bi -lt $script:ThemeBgPaths.Count -and -not $script:ThemeBgImage; $bi++) {
+$script:OuBgStart = $(if ($script:ThemeBgPaths.Count -gt 1) { Get-Random -Minimum 0 -Maximum $script:ThemeBgPaths.Count } else { 0 })
+for ($bk = 0; $bk -lt $script:ThemeBgPaths.Count -and -not $script:ThemeBgImage; $bk++) {
+  $bi = ($script:OuBgStart + $bk) % $script:ThemeBgPaths.Count   # missing/unreadable pick -> try the next one
   if (-not (Test-OuBgUsable $bi)) { continue }
   $bp = [string]$script:ThemeBgPaths[$bi]
   try {
