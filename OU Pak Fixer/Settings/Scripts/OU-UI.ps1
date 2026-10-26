@@ -311,7 +311,13 @@ public static class OuLvHeader {
 }
 
 # ==================== Open Unleashed theme (dark glass + red accents) ====================
-$script:ThemeBgPath = Join-Path $root 'Settings\Theme\ktm-xcw-bg.jpg'
+# Background photos: Settings\Theme\bg-01.jpg, bg-02.jpg, ... shown in name order; bg-01 is the launch photo.
+# The photo moves to the next one (wrapping) on every top-tab or side-tab change.
+$script:ThemeBgDir = Join-Path $root 'Settings\Theme'
+$script:ThemeBgPaths = @()
+try { $script:ThemeBgPaths = @(Get-ChildItem -LiteralPath $script:ThemeBgDir -File -ErrorAction Stop | Where-Object { $_.Name -match '^bg-\d+\.(jpe?g|png)$' } | Sort-Object Name | ForEach-Object { $_.FullName }) } catch { $script:ThemeBgPaths = @() }
+if (-not $script:ThemeBgPaths.Count) { $script:ThemeBgPaths = @(Join-Path $script:ThemeBgDir 'ktm-xcw-bg.jpg') }   # older installs
+$script:ThemeBgPath = $script:ThemeBgPaths[0]
 # App icon (197N front plate). Missing/bad file never blocks launch.
 $script:AppIconPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'Theme\OU-PakFixer.ico'
 $script:AppIcon = $null
@@ -516,6 +522,165 @@ function Request-OuGlassRefresh([switch]$ForceBg) {
   $script:OuGlassResizeTimer.Start()
 }
 
+# ---------- Background rotation (lazy decode + small cache, never blocks the UI) ----------
+# Decode = read file bytes, then copy into a premultiplied bitmap so painting never has to decode again.
+$script:OuBgDecodeScript = {
+  param([string]$path)
+  $bytes = [IO.File]::ReadAllBytes($path)
+  $ms = New-Object IO.MemoryStream(,$bytes)
+  try {
+    $src = [System.Drawing.Image]::FromStream($ms)
+    try {
+      $bmp = New-Object System.Drawing.Bitmap($src.Width, $src.Height, [System.Drawing.Imaging.PixelFormat]::Format32bppPArgb)
+      $g = [System.Drawing.Graphics]::FromImage($bmp)
+      try { $g.DrawImage($src, 0, 0, $src.Width, $src.Height) } finally { $g.Dispose() }
+      , $bmp
+    } finally { $src.Dispose() }
+  } finally { $ms.Dispose() }
+}
+$script:OuBgIndex = 0          # photo on screen
+$script:OuBgWanted = -1        # photo waiting for its decode (-1 = none)
+$script:OuBgCache = @{}        # path -> decoded Bitmap (current, wanted and next only)
+$script:OuBgBad = @{}          # path -> $true when missing/unreadable (skipped)
+$script:OuBgJob = $null        # @{ Path; Ps; Iar } one background decode at a time
+$script:OuBgRs = $null
+$script:OuBgTimer = $null
+$script:OuBgSwaps = 0
+
+function Test-OuBgUsable([int]$i) {
+  if ($i -lt 0 -or $i -ge $script:ThemeBgPaths.Count) { return $false }
+  $p = [string]$script:ThemeBgPaths[$i]
+  if ($script:OuBgBad.ContainsKey($p)) { return $false }
+  if ($script:OuBgCache.ContainsKey($p)) { return $true }
+  if (-not [IO.File]::Exists($p)) { $script:OuBgBad[$p] = $true; return $false }
+  return $true
+}
+
+function Get-OuBgNextIndex([int]$from) {
+  $n = $script:ThemeBgPaths.Count
+  for ($k = 1; $k -le $n; $k++) {
+    $i = ($from + $k) % $n
+    if (Test-OuBgUsable $i) { return $i }
+  }
+  return -1
+}
+
+function Get-OuBgRunspace {
+  $rs = $script:OuBgRs
+  if ($rs) {
+    $st = $rs.RunspaceStateInfo.State
+    if ($st -eq 'Opened' -or $st -eq 'Opening' -or $st -eq 'BeforeOpen') { return $rs }
+    try { $rs.Dispose() } catch { }
+  }
+  $rs = [runspacefactory]::CreateRunspace()
+  $rs.ApartmentState = 'MTA'
+  $rs.OpenAsync()   # opens off the UI thread; decodes start once it is Opened
+  $script:OuBgRs = $rs
+  return $rs
+}
+
+function Start-OuBgDecode([int]$i) {
+  if ($script:OuBgJob) { return $false }
+  if (-not (Test-OuBgUsable $i)) { return $false }
+  $p = [string]$script:ThemeBgPaths[$i]
+  if ($script:OuBgCache.ContainsKey($p)) { return $false }
+  try {
+    $rs = Get-OuBgRunspace
+    if ($rs.RunspaceStateInfo.State -ne 'Opened') { return $true }   # still opening: timer retries
+    $ps = [powershell]::Create()
+    $ps.Runspace = $rs
+    [void]$ps.AddScript($script:OuBgDecodeScript).AddArgument($p)
+    $script:OuBgJob = @{ Path = $p; Ps = $ps; Iar = $ps.BeginInvoke() }
+  } catch {
+    # No background runspace: decode now (one photo, only when it is actually needed)
+    try { $script:OuBgCache[$p] = & $script:OuBgDecodeScript $p } catch { $script:OuBgBad[$p] = $true }
+  }
+  return $true
+}
+
+function Complete-OuBgDecode {
+  $j = $script:OuBgJob
+  if (-not $j -or -not $j.Iar.IsCompleted) { return }
+  $script:OuBgJob = $null
+  $bmp = $null
+  try {
+    $out = $j.Ps.EndInvoke($j.Iar)
+    foreach ($x in @($out)) { if ($x -is [System.Drawing.Image]) { $bmp = [System.Drawing.Image]$x } }
+  } catch { $bmp = $null }
+  try { $j.Ps.Dispose() } catch { }
+  if ($bmp) { $script:OuBgCache[$j.Path] = $bmp } else { $script:OuBgBad[$j.Path] = $true }
+}
+
+function Trim-OuBgCache {
+  $keep = @{}
+  foreach ($i in @($script:OuBgIndex, $script:OuBgWanted, (Get-OuBgNextIndex $script:OuBgIndex))) {
+    if ($i -ge 0 -and $i -lt $script:ThemeBgPaths.Count) { $keep[[string]$script:ThemeBgPaths[$i]] = $true }
+  }
+  foreach ($p in @($script:OuBgCache.Keys)) {
+    if ($keep.ContainsKey($p)) { continue }
+    $img = $script:OuBgCache[$p]
+    if ($form -and [object]::ReferenceEquals($form.BackgroundImage, $img)) { continue }
+    $script:OuBgCache.Remove($p)
+    try { $img.Dispose() } catch { }
+  }
+}
+
+function Apply-OuBackground([int]$i) {
+  $p = [string]$script:ThemeBgPaths[$i]
+  $img = $script:OuBgCache[$p]
+  if (-not $img -or -not $form -or $form.IsDisposed) { return }
+  $script:OuBgIndex = $i
+  $script:OuBgWanted = -1
+  $script:ThemeBgImage = $img
+  $script:ThemeBgPath = $p
+  $form.BackgroundImage = $img
+  $form.BackgroundImageLayout = 'Stretch'
+  $script:OuBgSwaps++
+  # Same glass path as a resize: rebuild the one stretched copy, repaint glass panels + composites.
+  Invalidate-OuGlass -ForceBg
+  try { $form.Invalidate($true) } catch { }
+  Trim-OuBgCache
+}
+
+function Invoke-OuBgTick {
+  Complete-OuBgDecode
+  $w = $script:OuBgWanted
+  if ($w -ge 0) {
+    if (-not (Test-OuBgUsable $w)) { $script:OuBgWanted = Get-OuBgNextIndex $w; if ($script:OuBgWanted -eq $script:OuBgIndex) { $script:OuBgWanted = -1 }; return }
+    if ($script:OuBgCache.ContainsKey([string]$script:ThemeBgPaths[$w])) { Apply-OuBackground $w; return }
+    [void](Start-OuBgDecode $w)
+    return
+  }
+  if ($script:OuBgJob) { return }
+  # Idle: prefetch the next photo so the next tab change swaps instantly
+  $nx = Get-OuBgNextIndex $script:OuBgIndex
+  if ($nx -ge 0 -and $nx -ne $script:OuBgIndex -and (Start-OuBgDecode $nx)) { return }
+  if ($script:OuBgTimer) { $script:OuBgTimer.Stop() }
+}
+
+function Start-OuBgTimer {
+  if (-not $script:OuBgTimer) {
+    $t = New-Object System.Windows.Forms.Timer
+    $t.Interval = 60
+    $t.Add_Tick({ try { Invoke-OuBgTick } catch { } })
+    $script:OuBgTimer = $t
+  }
+  $script:OuBgTimer.Start()
+}
+
+# Called once per top-tab / side-tab change.
+function Step-OuBackground {
+  try {
+    if (-not $form -or $form.IsDisposed -or $script:ThemeBgPaths.Count -lt 2) { return }
+    $from = $(if ($script:OuBgWanted -ge 0) { $script:OuBgWanted } else { $script:OuBgIndex })
+    $nx = Get-OuBgNextIndex $from
+    if ($nx -lt 0 -or $nx -eq $script:OuBgIndex) { $script:OuBgWanted = -1; return }
+    if ($script:OuBgCache.ContainsKey([string]$script:ThemeBgPaths[$nx])) { Apply-OuBackground $nx }
+    else { $script:OuBgWanted = $nx }
+    Start-OuBgTimer
+  } catch { }
+}
+
 # Nested panels cannot see form BackgroundImage through opaque SplitContainer ancestors.
 # Fix: each glass panel paints the form photo cropped to its bounds, then GlassAlpha dark overlay.
 function Enable-OuGlass([System.Windows.Forms.Control]$c, [int]$alpha = -1) {
@@ -657,13 +822,20 @@ $form.MinimumSize = New-Object System.Drawing.Size(900, 580)
 $form.BackColor = $script:Theme.PanelDeep
 Set-OuFormIcon $form
 # Full-bleed OU photo behind translucent cards
-if (Test-Path -LiteralPath $script:ThemeBgPath) {
+# Launch photo (bg-01) decodes now; the rest decode in the background only when needed.
+$script:ThemeBgImage = $null
+for ($bi = 0; $bi -lt $script:ThemeBgPaths.Count -and -not $script:ThemeBgImage; $bi++) {
+  if (-not (Test-OuBgUsable $bi)) { continue }
+  $bp = [string]$script:ThemeBgPaths[$bi]
   try {
-    $script:ThemeBgImage = [System.Drawing.Image]::FromFile($script:ThemeBgPath)
+    $script:OuBgCache[$bp] = & $script:OuBgDecodeScript $bp
+    $script:ThemeBgImage = $script:OuBgCache[$bp]
+    $script:ThemeBgPath = $bp
+    $script:OuBgIndex = $bi
     $form.BackgroundImage = $script:ThemeBgImage
     $form.BackgroundImageLayout = 'Stretch'
-  } catch { $script:ThemeBgImage = $null }
-} else { $script:ThemeBgImage = $null }
+  } catch { $script:OuBgBad[$bp] = $true; $script:ThemeBgImage = $null }
+}
 $form.Font = New-Object System.Drawing.Font('Segoe UI', 9)
 
 # Top: game path
@@ -2538,6 +2710,7 @@ function Build-FixFiltersRail {
       }
       Apply-SourceUI
       Refresh-CatalogList -KeepShowroom
+      Step-OuBackground
     })
   }
   $y += 36
@@ -4618,7 +4791,9 @@ function Build-ManageRailForSub([string]$sub) {
     $script:ManageRailButtons[$name] = $b
     $b.Add_Click({
       param($sender, $e)
+      $was = $script:ManageSub
       Build-ManageRailForSub ([string]$sender.Tag)
+      if ($script:ManageSub -ne $was) { Step-OuBackground }
     })
   }
   $hdr.BringToFront()
@@ -5029,7 +5204,7 @@ function Build-AboutRail {
   foreach ($n in @('README', 'Version')) {
     $b = Add-RailButton $n $n
     $script:AboutRailButtons[$n] = $b
-    $b.Add_Click({ param($sender, $e); Show-AboutSub ([string]$sender.Tag) })
+    $b.Add_Click({ param($sender, $e); $was = $script:AboutSub; Show-AboutSub ([string]$sender.Tag); if ($script:AboutSub -ne $was) { Step-OuBackground } })
   }
   $script:RailCacheExtra['ABOUT'] = $script:AboutRailButtons
 }
@@ -6055,7 +6230,9 @@ function Show-Page([string]$name) {
 foreach ($n in $navNames) {
   $navButtons[$n].Add_Click({
     param($sender, $e)
+    $was = $script:CurrentPage
     Show-Page ([string]$sender.Tag)
+    if ($script:CurrentPage -ne $was) { Step-OuBackground }
   })
 }
 
@@ -6063,6 +6240,7 @@ $form.Add_Shown({
   Invalidate-OuGlass
   Update-GameBox
   Show-Page 'PACK MANAGER'
+  Start-OuBgTimer   # idle prefetch of the next background photo
 })
 
 $form.Add_FormClosing({
@@ -6072,6 +6250,9 @@ $form.Add_FormClosing({
 
 $form.Add_FormClosed({
   if ($script:ShowroomPreloadRs) { try { $script:ShowroomPreloadRs.Dispose() } catch {}; $script:ShowroomPreloadRs = $null }
+  if ($script:OuBgTimer) { try { $script:OuBgTimer.Stop() } catch {} }
+  if ($script:OuBgJob) { try { $script:OuBgJob.Ps.Stop(); $script:OuBgJob.Ps.Dispose() } catch {}; $script:OuBgJob = $null }
+  if ($script:OuBgRs) { try { $script:OuBgRs.Dispose() } catch {}; $script:OuBgRs = $null }
   if ($script:OU3DPoll) { try { $script:OU3DPoll.Stop() } catch {} }
   if ($script:OU3DState -eq 'ready') { try { [OU3DHost]::CancelThumbs() } catch {} }
   Clear-Preview

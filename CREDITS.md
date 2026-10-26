@@ -30,4 +30,4 @@ Most of these skins are archived in the [MVA Unleashed Mod Collection](https://w
 ## Game
 MX vs ATV Unleashed is (c) THQ / Rainbow Studios. This is a fan project and is not affiliated with or endorsed by them.
 
-<sub>Background image: an in-game screenshot of Nuckin's 06 KTM 200 XC-W.</sub>
+<sub>Background images: in-game screenshots of Nuckin's 06 KTM 200 XC-W.</sub>
